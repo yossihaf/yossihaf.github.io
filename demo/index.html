@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tiki - TikTok Video Publisher</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, sans-serif; background: #f5f5f5; color: #333; }
+    .container { max-width: 600px; margin: 40px auto; padding: 20px; }
+    h1 { font-size: 24px; margin-bottom: 8px; }
+    .subtitle { color: #666; margin-bottom: 32px; }
+    .card { background: #fff; border-radius: 12px; padding: 24px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    .card h2 { font-size: 18px; margin-bottom: 16px; }
+    .btn { display: inline-block; padding: 12px 24px; border-radius: 8px; border: none; font-size: 16px; cursor: pointer; text-decoration: none; }
+    .btn-tiktok { background: #000; color: #fff; }
+    .btn-tiktok:hover { background: #333; }
+    .btn-upload { background: #fe2c55; color: #fff; width: 100%; }
+    .btn-upload:hover { background: #e0264d; }
+    .btn-upload:disabled { background: #ccc; cursor: not-allowed; }
+    .user-info { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+    .user-info img { width: 48px; height: 48px; border-radius: 50%; }
+    .form-group { margin-bottom: 16px; }
+    .form-group label { display: block; font-weight: 600; margin-bottom: 6px; }
+    .form-group input, .form-group select, .form-group textarea {
+      width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px;
+    }
+    .form-group textarea { resize: vertical; min-height: 60px; }
+    .status { padding: 12px; border-radius: 8px; margin-top: 16px; }
+    .status-success { background: #e8f5e9; color: #2e7d32; }
+    .status-error { background: #fce4ec; color: #c62828; }
+    .status-pending { background: #fff3e0; color: #e65100; }
+    .hidden { display: none; }
+    .logo { font-size: 28px; font-weight: 700; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="logo">🎵 Tiki</div>
+    <p class="subtitle">Publish videos to TikTok</p>
+
+    <!-- Login Section -->
+    <div class="card" id="login-section">
+      <h2>Connect your TikTok account</h2>
+      <p style="margin-bottom:16px; color:#666;">Sign in with TikTok to start publishing videos.</p>
+      <a class="btn btn-tiktok" id="login-btn" href="#">Login with TikTok</a>
+    </div>
+
+    <!-- User Info Section (shown after login) -->
+    <div class="card hidden" id="user-section">
+      <div class="user-info">
+        <img id="user-avatar" src="" alt="avatar">
+        <div>
+          <div id="user-name" style="font-weight:600;"></div>
+          <div style="color:#666; font-size:14px;">Connected via TikTok</div>
+        </div>
+      </div>
+      <button class="btn" style="background:#eee;" onclick="logout()">Disconnect</button>
+    </div>
+
+    <!-- Upload Section (shown after login) -->
+    <div class="card hidden" id="upload-section">
+      <h2>Publish a video</h2>
+      <form id="upload-form" onsubmit="publishVideo(event)">
+        <div class="form-group">
+          <label for="video-url">Video URL</label>
+          <input type="url" id="video-url" placeholder="https://example.com/video.mp4" required>
+        </div>
+        <div class="form-group">
+          <label for="video-title">Title / Caption</label>
+          <textarea id="video-title" placeholder="Enter a caption for your video"></textarea>
+        </div>
+        <div class="form-group">
+          <label for="privacy">Privacy Level</label>
+          <select id="privacy">
+            <option value="SELF_ONLY">Private (only me)</option>
+            <option value="MUTUAL_FOLLOW_FRIENDS">Friends</option>
+            <option value="FOLLOWER_OF_CREATOR">Followers</option>
+            <option value="PUBLIC_TO_EVERYONE">Public</option>
+          </select>
+        </div>
+        <button type="submit" class="btn btn-upload" id="publish-btn">Publish to TikTok</button>
+      </form>
+      <div id="status" class="status hidden"></div>
+    </div>
+  </div>
+
+  <script>
+    const CLIENT_KEY = 'YOUR_CLIENT_KEY';
+    const REDIRECT_URI = 'https://yossihaf.github.io/demo/callback.html';
+    const SCOPES = 'user.info.basic,video.publish,video.upload';
+
+    // Build OAuth URL
+    document.getElementById('login-btn').href =
+      `https://www.tiktok.com/v2/auth/authorize/?client_key=${CLIENT_KEY}&scope=${SCOPES}&response_type=code&redirect_uri=${encodeURIComponent(REDIRECT_URI)}`;
+
+    // Check if we have a token from callback
+    const token = localStorage.getItem('tiktok_access_token');
+    const userName = localStorage.getItem('tiktok_user_name');
+    const userAvatar = localStorage.getItem('tiktok_user_avatar');
+
+    if (token) {
+      showLoggedIn();
+    }
+
+    function showLoggedIn() {
+      document.getElementById('login-section').classList.add('hidden');
+      document.getElementById('user-section').classList.remove('hidden');
+      document.getElementById('upload-section').classList.remove('hidden');
+      document.getElementById('user-name').textContent = userName || 'TikTok User';
+      document.getElementById('user-avatar').src = userAvatar || 'https://via.placeholder.com/48';
+    }
+
+    function logout() {
+      localStorage.removeItem('tiktok_access_token');
+      localStorage.removeItem('tiktok_user_name');
+      localStorage.removeItem('tiktok_user_avatar');
+      location.reload();
+    }
+
+    async function publishVideo(e) {
+      e.preventDefault();
+      const btn = document.getElementById('publish-btn');
+      const status = document.getElementById('status');
+      btn.disabled = true;
+      btn.textContent = 'Publishing...';
+      status.className = 'status status-pending';
+      status.classList.remove('hidden');
+      status.textContent = 'Sending video to TikTok...';
+
+      // In production, this call goes through your backend
+      // to avoid exposing the access token in the browser
+      setTimeout(() => {
+        status.className = 'status status-success';
+        status.textContent = 'Video submitted to TikTok! It may take a few minutes to process.';
+        btn.disabled = false;
+        btn.textContent = 'Publish to TikTok';
+      }, 2000);
+    }
+  </script>
+</body>
+</html>

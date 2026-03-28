@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Tiki - Authorization</title>
+  <style>
+    body { font-family: system-ui, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; background: #f5f5f5; }
+    .card { background: #fff; padding: 32px; border-radius: 12px; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2>Connecting to TikTok...</h2>
+    <p id="msg">Processing authorization...</p>
+  </div>
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get('code');
+    const error = params.get('error');
+
+    if (error) {
+      document.getElementById('msg').textContent = 'Authorization failed: ' + error;
+    } else if (code) {
+      // In production, send this code to your backend to exchange for a token
+      localStorage.setItem('tiktok_auth_code', code);
+      localStorage.setItem('tiktok_access_token', 'pending_exchange');
+      localStorage.setItem('tiktok_user_name', 'TikTok User');
+      document.getElementById('msg').textContent = 'Authorization successful! Redirecting...';
+      setTimeout(() => { window.location.href = '/demo/'; }, 1500);
+    } else {
+      document.getElementById('msg').textContent = 'No authorization code received.';
+    }
+  </script>
+</body>
+</html>
