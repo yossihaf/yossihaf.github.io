@@ -1,1 +1,39 @@
-<!DOCTYPE html><html><head><title>yossihaf</title></head><body></body></html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tiki - TikTok Video Publisher</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, sans-serif; background: #f5f5f5; color: #333; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+    .card { background: #fff; padding: 32px; border-radius: 12px; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,0.1); max-width: 400px; }
+    .card p { margin-top: 12px; color: #666; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2 id="title">Redirecting...</h2>
+    <p id="msg">Processing authorization...</p>
+  </div>
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get('code');
+    const error = params.get('error');
+    if (code) {
+      localStorage.setItem('tiktok_auth_code', code);
+      localStorage.setItem('tiktok_access_token', 'pending_exchange');
+      localStorage.setItem('tiktok_user_name', 'TikTok User');
+      document.getElementById('title').textContent = 'Connected!';
+      document.getElementById('msg').textContent = 'Authorization successful. Redirecting to app...';
+      setTimeout(function() { window.location.href = '/demo/'; }, 1500);
+    } else if (error) {
+      document.getElementById('title').textContent = 'Error';
+      document.getElementById('msg').textContent = 'Authorization failed: ' + error;
+    } else {
+      document.getElementById('title').textContent = 'Tiki';
+      document.getElementById('msg').innerHTML = '<a href="/demo/">Go to app</a>';
+    }
+  </script>
+</body>
+</html>
